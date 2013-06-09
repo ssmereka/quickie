@@ -61,7 +61,7 @@ function loadFolder(relativePath, app, db, config) {
 
   // Make sure there is a '/' at the start of the relative path.
   relativePath = (relativePath.substring(0,1) === '/') ? relativePath : '/' + relativePath; 
-  var files = fs.readdirSync(path);
+  var files = fs.readdirSync(config.dirname + relativePath);
   
   files.forEach(function (file) {
     // Don't try to load invalid files
