@@ -623,7 +623,7 @@ if $useForever ; then
   if [[ ! -d $log_folder ]]; then
     sudo mkdir "$log_folder"
 
-    if[[ ! -d $log_folder ]]; then
+    if [[ ! -d $log_folder ]]; then
       echo [ Error ] Failed to create log folder $log_folder
       exit 1
     else
@@ -646,6 +646,6 @@ fi
 # -------------------------------------------------------- #
 
 # If we want to view the logs being written by node.
-if $useTail && useForever ; then
+if $useTail && $useForever ; then
   tail -F "$log_folder/node.log"
 fi
