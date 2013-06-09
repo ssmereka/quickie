@@ -1,3 +1,7 @@
+var mongoose    = require('mongoose'),                     // Include object modeling for MongoDB
+    Schema      = mongoose.Schema,                         // Mongoose schema object for MongoDB documents.
+    ObjectId    = Schema.ObjectId;                         // Object ID used in mongoose schemas
+
 module.exports = function(app, db, config) {
 
 /********************************************************/
