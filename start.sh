@@ -189,14 +189,18 @@ fi
 # For now, we want to make sure it is installed globally.
 # If no version number is returned from this command,
 # then the script will need to install forever.
-foreverVersion="not required"
+foreverVersionTxt="not required"
 if $useForever ; then
-  foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
-  foreverVersion=${foreverVersion##*@}
-  if [[ $foreverVersion == "" ]]; then
-    foreverVersion="not installed"
+  if [[ "nodeVersion" == "" ]]; then
+    foreverVersionTxt="unknown"
   else
-    foreverVersion="v$foreverVersion"
+    foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
+    foreverVersion=${foreverVersion##*@}
+    if [[ $foreverVersion == "" ]]; then
+      foreverVersionTxt="not installed"
+    else
+      foreverVersionTxt="v$foreverVersion"
+    fi
   fi
 fi
 
@@ -283,7 +287,7 @@ if [[ $printHelpMenu = true ]]; then
   echo -e "\troot permission: \t" $isUserRoot
   echo -e "\tmode \t\t\t" $env
   echo -e "\tnode version \t\t" $nodeVersion
-  echo -e "\tforever version \t" $foreverVersion
+  echo -e "\tforever version \t" $foreverVersionTxt
   echo -e "\tnginx version \t\t" $nginxVersion
   echo -e "\tssl certs required \t" $sslRequired
   echo -e "\tmodules installed \t" $isModulesInstalled
