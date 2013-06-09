@@ -1,4 +1,5 @@
-var express = require('express'),                                    // We will use express to handle routes and setup of our server.
+var path = require('path'),
+    express = require('express'),                                    // We will use express to handle routes and setup of our server.
     expressValidator = require('express-validator'),  
     configModule = require('./config/config'),                       // This is a module that will handle basic server configuraitons.
     config = configModule.config(),                                  // This is our configuration object that stores global settings for the server..
