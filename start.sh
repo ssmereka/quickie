@@ -421,7 +421,7 @@ if [[ $nodeVersion == "" ]]; then
   sudo apt-get install -y --force-yes -qq nodejs > /dev/null 2>&1
 
   nodeVersion=`node -v 2> /dev/null`
-  if [[ $nodeVersion == ""]]; then
+  if [[ $nodeVersion == "" ]]; then
     echo [ ERROR ] There was a problem installing node.js.
     exit 1
   else
@@ -440,6 +440,9 @@ fi
 # install them.
 if [[ $isModulesInstalled == false ]]; then
   echo "Installing node application dependency modules, this could take some time..."
+
+  # Bcrypt requires build-essential
+  sudo apt-get install -y --force-yes -qq build-essential > /dev/null 2>&1
 
   # Install all the node application's modules, but only
   # display warning messages to the user.
@@ -462,7 +465,7 @@ fi
 # -------------------------------------------------------- #
 
 # Check to see if we need forever installed.
-if useForever ; then
+if $useForever ; then
 
   # Check to make sure forever is installed globally, if it
   # is not, then install it.
@@ -492,7 +495,7 @@ fi
 # -------------------------------------------------------- #
 
 # Check to see if we need to install nginx.
-if [[ "$nginxVersion" != "not required"]]; then
+if [[ "$nginxVersion" != "not required" ]]; then
   
   # If nginx is required, ensure it is installed.
   if [[ "$nginxVersion" == "" ]] || [[ "$nginxVersion" == "not installed." ]]; then
