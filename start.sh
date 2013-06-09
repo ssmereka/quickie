@@ -241,18 +241,13 @@ do
   fi
 done
 
-# Is Service Command Available
-# Check to see if we have the service command available 
-# on this OS.  We will need it to check if nginx or
-# apache are running.
-type -P service &>/dev/null && isServiceCommandAvailable=true || isServiceCommandAvailable=false
-
 # Is Apache Running
 # Apache cannot run at the same time as nginx. If we are 
 # installing or running nginx, then make sure we stop 
 # apache if it is installed.
 isApacheRunning=false
-if [[ $isServiceCommandAvailable == true ]]; then
+type -P service &>/dev/null && isApache2CommandAvailable=true || isApache2CommandAvailable=false
+if [[ $isApache2CommandAvailable == true ]]; then
   isApacheRunningTxt=`service apache2 status`
   if [[ "$isApacheRunningTxt" != *"NOT"* ]] && [[ "$isApacheRunningTxt" != *"unrecognize"* ]] && [[ "$isApacheRunningTxt" != *"not"* ]]; then
     isApacheRunning=true
@@ -262,7 +257,8 @@ fi
 # Is Nginx Running
 # Check to see if nginx is already running.
 isNginxRunning=false
-if [[ $isServiceCommandAvailable == true ]]; then
+type -P service &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
+if [[ $isNginxCommandAvailable == true ]]; then
   isNginxRunningTxt=`service nginx status`
   if [[ "isNginxRunningTxt" != "" ]] && [[ "$nginxVersion" != "not installed." ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isApacheRunningTxt" != *"unrecognized"* ]]; then
     isNginxRunning=true
@@ -468,7 +464,7 @@ if [[ "$nginxVersion" != "not required"]]; then
     sudo service nginx start
     
     # Check and see if nginx started successfully.
-    if [[ $isServiceCommandAvailable == true ]]; then
+    if [[ $isNginxCommandAvailable == true ]]; then
       isNginxRunningTxt=`service nginx status`
       if [[ "isNginxRunningTxt" != "" ]] && [[ "$nginxVersion" != "not installed." ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isApacheRunningTxt" != *"unrecognized"* ]]; then
         echo [ OK ] Nginx is now running.
