@@ -446,7 +446,7 @@ if [[ $isModulesInstalled == false ]]; then
 
   # Install all the node application's modules, but only
   # display warning messages to the user.
-  sudo npm install --loglevel warn
+  sudo npm install --loglevel error
 
   # Verify that we were successful.
   if [[ -d $dir'/node_modules' ]]; then
@@ -471,7 +471,7 @@ if $useForever ; then
   # is not, then install it.
   if [[ "$foreverVersion" == "" ]]; then
     echo "Installing Forever Globally..."
-    sudo npm install forever -g --loglevel warn
+    sudo npm install forever -g --loglevel error
 
     # Get the forever version
     foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
@@ -589,7 +589,7 @@ fi
 # -------------------------------------------------------- #
 
 # Check to see if we are using nginx.
-if [[ "$nginxVersion" != "not required"]]; then
+if [[ "$nginxVersion" != "not required" ]]; then
 
   if ! $isNginxRunning ; then
     sudo service nginx start
