@@ -6,9 +6,11 @@ A node.js template to get you started quickly so you can focus on your applicati
 Getting Started
 ===============
 1. Clone this repository
+
     git clone https://github.com/ssmereka/quickie.git
 
 2. Start the server
+
     ./start.sh -l -t
 
 3. Start modifying your node server.  No need to restart the server, changes will be pushed live every time you save.

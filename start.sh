@@ -82,34 +82,83 @@ nginxRequiredInModes[2]="development"
 # Setup Default Values for Global Variables
 # -------------------------------------------------------- #
 
-dir=`pwd`
-unamestr=`uname`
-unamestrn=`uname -n`
-env=""
-printHelpMenu=false
-os="unknown"
-useForever=true
-useTail=false
+dir=`pwd`                     # Get the directory that ran the script.
+env=""                        # Node.JS Enviorment (local, development, production, etc.)
+printHelpMenu=false           # Was there a request to print the help menu?
+useForever=true               # Is the script going to use forever to execute the node server.
+useTail=false                 # Is the user going to view or tail the node log file.
+debug=false                   # Is this script in debug mode?
+isForceScript=false           # Should we force the script to run, even if it is not recommended to.
 
 
-# Mac OS Devices
-# You can default to a specific enviorment for Macs.
-if [[ "$env" == "" ]]; then
-  if [[ "$unamestr" == 'Darwin' ]]; then
-    os="mac"
-    env=$macOsEnv
-  fi
-fi
+# -------------------------------------------------------- #
+# Detect Supported Operating Enviorment
+# -------------------------------------------------------- #
 
-# Linux Devices
-# You can default to a specific enviorment for Linux.
-if [[ "$env" == "" ]]; then
-  if [[ "$unamestr" == 'Linux' ]]; then
-    os="linux"
+envUname=`uname`
+envNodeName=`uname -n`
+envOsName=`uname -o`
+envKernalName=`uname -s`
+envMachineName=`uname -m`
+envProcessor=`uname -p`
+envHardwarePlatform=`uname -i`
+envKernalVersion=`uname -v`
+envKernalRelease=`uname -r`
+
+envPrettyName=`cat /etc/*-release 2> /dev/null | grep PRETTY_NAME`
+envPrettyName=${envPrettyName#PRETTY_NAME=}
+
+envDistribId=`cat /etc/*-release 2> /dev/null | grep ID`
+envDistribId=${envDistribId#ID=}
+
+envVersionId=`cat /etc/*-release 2> /dev/null | grep VERSION_ID`
+envVersionId=${envVersionId#VERSION_ID=}
+
+isEnviormentSupported=false
+# Linux
+if [[ "$envUname" == 'Linux' ]]; then
+  
+  # Set the default linux node.js enviorment.
+  if [[ "$env" == "" ]]; then
     env=$linuxOsEnv
   fi
+
+  # Ubuntu
+  if [[ "$envDistribId" == "ubuntu" ]]; then
+    # 12.04.x is supported.
+    if [[ "$envVersionId" == "12.04" ]]; then
+      isEnviormentSupported=true
+    fi
+  fi
 fi
 
+# Windows (Cygwin)
+if [[ "$envOsName" == "Cygwin" ]]; then
+  
+  # Windows is not supported because of becrypt.
+  isEnviormentSupported=false
+  
+  # Windows 7 x64
+  if [[ "$envKernalName" == "CYGWIN_NT-6.1-WOW64" ]]; then
+    envPrettyName="Windows 7 x64, Cygwin"
+  fi
+fi
+
+
+# Mac OS
+if [[ "$envUname" == 'Darwin' ]]; then
+  # Set the default mac node.js enviorment.
+  if [[ "$env" == "" ]]; then
+    env=$macOsEnv
+  fi
+
+  isEnviormentSupported=true
+fi
+
+
+# -------------------------------------------------------- #
+# Command Line User Input
+# -------------------------------------------------------- #
 
 # Handle script input from command line.
 for var in "$@"
@@ -145,8 +194,23 @@ do
     -h | [help] | -help | --help)
       printHelpMenu=true
       ;;
+
+    # Enable debug mode for the script.
+    -debug | [debug] | --debug | --d)
+      debug=true
+      ;;
+
+    # Force the script to run, even if it is recommended not to.
+    -f | [force] | -force | --f)
+      isForceScript=true
+      ;;
     esac
 done
+
+
+# -------------------------------------------------------- #
+# Default Node.JS Enviorment Mode
+# -------------------------------------------------------- #
 
 # Force the default mode if one was not yet set.
 if [[ "$env" == "" ]]; then
@@ -275,6 +339,13 @@ fi
 # -------------------------------------------------------- #
 
 if [[ $printHelpMenu = true ]]; then
+
+  if $isEnviormentSupported ; then
+    isEnviormentSupportedTxt="Supported"
+  else
+    isEnviormentSupportedTxt="Not Supported"
+  fi
+
   echo -e "Starts the node.js server with the correct settings.\n"
   echo -e "usage: \tstart.sh [options]\n"
   echo "options:"
@@ -283,28 +354,81 @@ if [[ $printHelpMenu = true ]]; then
   echo -e "   -p   production mode \t forces the node server to start in production mode."
   echo -e "   -l   local mode \t\t forces the node server to start in local mode."
   echo -e "   -h   help \t\t\t displays this menu."
-  echo -e "\nScript Variables:"
-  echo -e "\troot permission: \t" $isUserRoot
-  echo -e "\tmode \t\t\t" $env
-  echo -e "\tnode version \t\t" $nodeVersion
-  echo -e "\tforever version \t" $foreverVersionTxt
-  echo -e "\tnginx version \t\t" $nginxVersion
-  echo -e "\tssl certs required \t" $sslRequired
-  echo -e "\tmodules installed \t" $isModulesInstalled
-  echo -e "\tapache running \t\t" $isApacheRunning
-  echo -e "\tnginx running \t\t" $isNginxRunning
-  echo -e "\toperating system \t" $os
-  echo -e "\ttail node log \t\t" $useTail
+  echo -e "\nDetected Enviorment:"
+  echo -e "\tOperating System: \t" $envPrettyName "\t" $isEnviormentSupportedTxt
+  echo -e "\tNode.JS Enviorment: \t $env mode"
+  if $debug ; then
+    echo -e "\nScript Variables:"
+    echo -e "\troot permission: \t" $isUserRoot
+    echo -e "\tmode \t\t\t" $env
+    echo -e "\tnode version \t\t" $nodeVersion
+    echo -e "\tforever version \t" $foreverVersionTxt
+    echo -e "\tnginx version \t\t" $nginxVersion
+    echo -e "\tssl certs required \t" $sslRequired
+    echo -e "\tmodules installed \t" $isModulesInstalled
+    echo -e "\tapache running \t\t" $isApacheRunning
+    echo -e "\tnginx running \t\t" $isNginxRunning
+    echo -e "\ttail node log \t\t" $useTail
+  fi
   exit
 fi
+
+
+# -------------------------------------------------------- #
+#  Ensure the Enviorment is Supported
+# -------------------------------------------------------- #
+
+# Check if the OS is supported or not.  If an OS is not
+# not supported, it is because of a depenency issue or the
+# simple fact that the script has not been tested that
+# platform.
+if ! $isEnviormentSupported && ! $isForceScript ; then
+  echo -e "\n--------------------------------------------------"
+  echo "   WARNING --- Operating System Not Supported"
+  echo "--------------------------------------------------"
+  echo -e "\n$envPrettyName is currently not supported."
+  echo -e "You can force the script to run using the -f flag,"
+  echo -e "however the results may be unexpected.\n"
+  echo -e "   $0 -f $*"
+  exit 1
+fi
+
 
 # -------------------------------------------------------- #
 #  Ensure User Has Root Permission
 # -------------------------------------------------------- #
+
+# Note:  If other platforms are supported in the future, we
+#        we will need to update this root check.
 if [[ $isUserRoot == false ]]; then
   echo "Please run this script with sudo:"
   echo "sudo $0 $*"
   exit 1
+fi
+
+
+# -------------------------------------------------------- #
+#  Install Node.JS and NPM
+# -------------------------------------------------------- #
+
+# If node.js is not installed, then install it.
+if [[ $nodeVersion == "" ]]; then
+  echo "Installing node.js, this could take some time..."
+  sudo apt-get update -y --force-yes -qq
+  sudo apt-get install -y --force-yes -qq python-software-properties > /dev/null 2>&1
+  sudo add-apt-repository -y ppa:chris-lea/node.js > /dev/null 2>&1
+  sudo apt-get update -y --force-yes -qq
+  sudo apt-get install -y --force-yes -qq nodejs > /dev/null 2>&1
+
+  nodeVersion=`node -v 2> /dev/null`
+  if [[ $nodeVersion == ""]]; then
+    echo [ ERROR ] There was a problem installing node.js.
+    exit 1
+  else
+    echo [ OK ] Node.js is now installed.
+  fi
+else
+  echo [ OK ] Node.js is installed.
 fi
 
 

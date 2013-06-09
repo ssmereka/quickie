@@ -1,31 +1,32 @@
-# WOPR Nginx Config
-# This file should be placed at /etc/nginx/sites-available/keys
+# Nginx Configuration File
+#
+# This file configures Nginx to serve your node.js application.
+# Do all your configurations in this file.
+#
+# This file's default location is /etc/nginx/sites-available/my-site-name-here.
+# The start script will make sure there is a symbolic link to this default location,
+# unless you change the start script variables.
 
-
+# ##################################################
 # Redirect to SSL
+#
+# When uncommented, this code will force all traffic
+# to your website to occur over SSL.  This will
+# greatly improve your website security.
+# ##################################################
+
+# TODO: rewrite from port 80 to port 443.
+
+
+# ##################################################
+# Server Configuration
+#
+# ##################################################
 server {
-  listen   80;
-  server_name    keys.livioconnect.com;
+  listen 80;
+  server_name  localhost;
 
-  location / {
-    rewrite ^   https://$server_name$request_uri? permanent;
-  }
-
-  location /public {
-    autoindex on;
-    alias /home/keys/keys/public/;
-  }
-}
-
-
-# LIVIOCONNECT
-server {
-  listen 50.56.25.30:443;
-  server_name  keys.livioconnect.com;
-
-  ssl    on;
-  ssl_certificate     /etc/ssl/livioconnect.com.pem;
-  ssl_certificate_key /etc/ssl/livioconnect.com.pem;
+  access_log /
 
   location / {
     proxy_pass http://127.0.0.1:3000;
