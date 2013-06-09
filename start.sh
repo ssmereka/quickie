@@ -246,7 +246,7 @@ done
 # installing or running nginx, then make sure we stop 
 # apache if it is installed.
 isApacheRunning=false
-type -P service &>/dev/null && isApache2CommandAvailable=true || isApache2CommandAvailable=false
+type -P service apache2 &>/dev/null && isApache2CommandAvailable=true || isApache2CommandAvailable=false
 if [[ $isApache2CommandAvailable == true ]]; then
   isApacheRunningTxt=`service apache2 status`
   if [[ "$isApacheRunningTxt" != *"NOT"* ]] && [[ "$isApacheRunningTxt" != *"unrecognize"* ]] && [[ "$isApacheRunningTxt" != *"not"* ]]; then
@@ -257,7 +257,7 @@ fi
 # Is Nginx Running
 # Check to see if nginx is already running.
 isNginxRunning=false
-type -P service &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
+type -P service nginx &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
 if [[ $isNginxCommandAvailable == true ]]; then
   isNginxRunningTxt=`service nginx status`
   if [[ "isNginxRunningTxt" != "" ]] && [[ "$nginxVersion" != "not installed." ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isApacheRunningTxt" != *"unrecognized"* ]]; then
