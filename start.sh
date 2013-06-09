@@ -191,7 +191,7 @@ fi
 # then the script will need to install forever.
 foreverVersionTxt="not required"
 if $useForever ; then
-  if [[ "nodeVersion" == "" ]]; then
+  if [[ "$nodeVersion" == "" ]]; then
     foreverVersionTxt="unknown"
   else
     foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
