@@ -108,7 +108,7 @@ envKernalRelease=`uname -r`
 envPrettyName=`cat /etc/*-release 2> /dev/null | grep PRETTY_NAME`
 envPrettyName=${envPrettyName#PRETTY_NAME=}
 
-envDistribId=`cat /etc/*-release 2> /dev/null | grep ID`
+envDistribId=`cat /etc/*-release 2> /dev/null | grep ^ID=`
 envDistribId=${envDistribId#ID=}
 
 envVersionId=`cat /etc/*-release 2> /dev/null | grep VERSION_ID`
@@ -116,7 +116,7 @@ envVersionId=${envVersionId#VERSION_ID=}
 
 isEnviormentSupported=false
 # Linux
-if [[ "$envUname" == 'Linux' ]]; then
+if [[ "$envUname" == "Linux" ]]; then
   
   # Set the default linux node.js enviorment.
   if [[ "$env" == "" ]]; then
@@ -126,7 +126,7 @@ if [[ "$envUname" == 'Linux' ]]; then
   # Ubuntu
   if [[ "$envDistribId" == "ubuntu" ]]; then
     # 12.04.x is supported.
-    if [[ "$envVersionId" == "12.04" ]]; then
+    if [[ "$envVersionId" == *"12.04"* ]]; then
       isEnviormentSupported=true
     fi
   fi
