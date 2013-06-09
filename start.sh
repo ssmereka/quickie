@@ -89,6 +89,7 @@ env=""
 printHelpMenu=false
 os="unknown"
 useForever=true
+useTail=false
 
 
 # Mac OS Devices
@@ -118,6 +119,11 @@ do
     # Set the node flag
     -n | -node | [node])
       useForever=false
+      ;;
+
+    # Tail the node log file when using forever.
+    -t | -tail | [tail])
+      useTail=true
       ;;
 
     # Set the enviorment to local.
@@ -288,6 +294,7 @@ if [[ $printHelpMenu = true ]]; then
   echo -e "\tapache running \t\t" $isApacheRunning
   echo -e "\tnginx running \t\t" $isNginxRunning
   echo -e "\toperating system \t" $os
+  echo -e "\ttail node log \t\t" $useTail
   exit
 fi
 
@@ -484,7 +491,7 @@ fi
 # If we are using forever, then make sure we have a log
 # folder and clear the old node log file.  Then start the
 # server and return.
-if useForever ; then
+if $useForever ; then
   
   if [[ ! -d $log_folder ]]; then
     sudo mkdir "$log_folder"
@@ -505,4 +512,13 @@ else
   
   # Run the server using node.
   NODE_ENV="$env" node server.js
+fi
+
+# -------------------------------------------------------- #
+# View Logs With Tail
+# -------------------------------------------------------- #
+
+# If we want to view the logs being written by node.
+if $useTail && useForever ; then
+  tail -F "$log_folder/node.log"
 fi
