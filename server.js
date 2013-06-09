@@ -60,7 +60,12 @@ function loadFolder(relativePath, app, db, config) {
   }
 
   // Make sure there is a '/' at the start of the relative path.
-  relativePath = (relativePath.substring(0,1) === '/') ? relativePath : '/' + relativePath; 
+  relativePath = (relativePath.substring(0,1) === '/') ? relativePath : '/' + relativePath;
+  if(! path.existsSync(config.dirname + relativePath)) {
+    console.log("Error: Can't load files in a directory that doesn't exist.");
+    return;
+  }
+
   var files = fs.readdirSync(config.dirname + relativePath);
   
   files.forEach(function (file) {
