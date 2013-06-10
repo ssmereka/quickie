@@ -1,5 +1,4 @@
-var path = require('path'),
-    express = require('express'),                                    // We will use express to handle routes and setup of our server.
+var express = require('express'),                                    // We will use express to handle routes and setup of our server.
     expressValidator = require('express-validator'),  
     configModule = require('./config/config'),                       // This is a module that will handle basic server configuraitons.
     config = configModule.config(),                                  // This is our configuration object that stores global settings for the server..
@@ -11,7 +10,7 @@ var path = require('path'),
     fs = require('fs'),                                              // Allows use of the filesystem.
     app = module.exports = express();                                // Get a new express server.
 
-configModule.configureEnviorment(express, app);                      // Handle different operating modes set by using "export NODE_ENV=local" or "export NODE_ENV=development" or etc.
+configModule.configureEnviorment(express, app, config);              // Handle different operating modes set by using "export NODE_ENV=local" or "export NODE_ENV=development" or etc.
 app.use(express.cookieParser());                                     // Setup express: enable cookies.
 app.use(express.bodyParser());                                       // Setup express: enable body parsing.
 app.use(expressValidator);
@@ -62,7 +61,7 @@ function loadFolder(relativePath, app, db, config) {
 
   // Make sure there is a '/' at the start of the relative path.
   relativePath = (relativePath.substring(0,1) === '/') ? relativePath : '/' + relativePath;
-  if(! path.existsSync(config.dirname + relativePath)) {
+  if(! fs.existsSync(config.dirname + relativePath)) {
     console.log("Error: Can't load files in a directory that doesn't exist.");
     return;
   }

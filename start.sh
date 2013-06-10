@@ -7,10 +7,9 @@
 # sure everything is installed and configured properly.  
 # Then it will start the server in the correct mode.
 #
-# To make sure your device operates in the correct mode, 
-# append your device name to the arrays below.
 #
-# Currently designed to work on Ubuntu 12.04 LTS
+# Currently designed to work on the following platforms:
+#    1. Ubuntu 12.04 LTS
 # -------------------------------------------------------- #
 
 
@@ -26,12 +25,17 @@
 # -------------------------------------------------------- #
 # Configure Script's variables
 # -------------------------------------------------------- #
+# You can configure the script to work how you want it to.
+# Simply modify the vairables in this section.
 
 # Default Mode for all devices.
+# If your enviorment mode is not set, then this mode will
+# be enforced.
 env_default="development"
 
 
 # Default Log folder.
+# The place where all the logs will be stored.
 # Don't place logs within in the applications root
 # directory or anywhere below it.  Otherwise forever will
 # restart everytime a log is written.
@@ -39,8 +43,9 @@ log_folder="/var/log/keys"
 
 
 # Default Mac OS Enviorment
-# Set a default enviorment for all mac computers running
-# this script.  Leave the value blank if you don't want
+# If your enviorment mode is not set manually, then this 
+# mode will be enforced for all Mac computers.
+# Leave the value blank if you don't want
 # to set a default value.
 #
 # Optional values: local, development, or production
@@ -48,8 +53,9 @@ macOsEnv=""
 
 
 # Default Linux OS Enviorment
-# Set a default enviorment for all linux computers running
-# this script.  Leave the value blank if you don't want
+# If your enviorment mode is not set manually, then this 
+# mode will be enforced for all Linux computers.
+# Leave the value blank if you don't want
 # to set a default value.
 #
 # Optional values: local, development, or production
@@ -60,16 +66,39 @@ linuxOsEnv=""
 # If you use MongoDB as your database, then set this 
 # variable to true so the script knows to install and
 # configure it.
+# You can specify the modes where MongoDB is required 
+# and the script will handle installation and 
+# configuration of MongoDB only when using those modes.
 useMongoDb=false
 
+mongodbRequiredInModes[0]="local"
+# mongodbRequiredInModes[1]="development"
+# mongodbRequiredInModes[2]="production"
+
+
 # Nginx
-# Specify the modes where nginx is required and the script
-# will handle installation and configuration.
+# If you use Nginx, then set this variable to true so the
+# script knows to install and configure it.
+# You can specify the modes where nginx is required and the 
+# script will handle installation and configuration of 
+# nginx only when using those modes.
+useNginx=true
+
 # nginxRequiredInModes[0]="local"
-nginxRequiredInModes[1]="production"
-nginxRequiredInModes[2]="development"
+nginxRequiredInModes[1]="development"
+nginxRequiredInModes[2]="production"
+
+# Apache
+# TODO: Make this work with apache
+useApache=false
+
+# apacheRequiredInModes[0]="local"
+apacheRequiredInModes[0]="development"
+apacheRequiredInModes[0]="production"
+
 
 # SSL
+# TODO: Configure ssl
 
 # -------------------------------------------------------- #
 # STOP -- You Don't Need to Change Anything Below  -- STOP
@@ -222,41 +251,92 @@ fi
 #  Verify Required Components and Settings
 # -------------------------------------------------------- #
 
-# Is User Root
-# Stores if the user ran the script with root privleges or
-# not.  They must have root to perform certain tasks.
-isUserRoot=false
+# Root
+# -------------------------------------------------------- #
+# The user must be root to perform some tasks, so lets
+# check and see if they are.
+isUserRoot=false                                           # Stores if the user is root or not, assume that they are not.
 
+# Is User Root
+# Checks to see if the user has root permissions.
 if [[ $UID == 0 ]]; then
   isUserRoot=true;
 fi
 
-# Node Version
+# Node
+# -------------------------------------------------------- #
 # Node.JS must be installed to run the server, this will
-# check for the current version of node installed.  If
-# there is no version number returned, then we know that
-# the script must install node.
-nodeVersion=`node -v 2> /dev/null`
+# check to see if node is installed and what version.
+nodeVersion=`node -v 2> /dev/null`                         # Get the node version number
+isNodeInstalled=false
 
-# MongoDB Version
-# Mongo and MongoDB may need to be installed and
-# configured.  This will check for the current version
-# installed, if there is no version number returned,
-# then we know that we must install it.
-if [[ useMongoDb ]]; then
-  mongoVersion=`mongo --version 2> /dev/null`
+if [[ "$nodeVersion" == "" ]]; then                        # If the version number is blank, we know it is not installed.
+  isNodeInstalled=true;
 fi
 
-# Forever Version
-# In order to run the server in a production enviorment
+# MongoDB
+# -------------------------------------------------------- #
+# Mongo and MongoDB may need to be installed and
+# configured.  This will check to see if we need mongo, 
+# if mongo is install, and if mongo is running.
+
+mongoVersion="not required"                                # Holds the current mongo version, but assume it is not required.
+isMongodbInstalled=false                                   # Is mongo install?  Lets assume it is not.
+
+# Is MongoDB Required
+# Check if MongoDB is required before we start the node 
+# server.
+if $useMongoDb ; then
+  isMongoDbRequired=false
+  for mode in $mongodbRequiredInModes
+  do
+    if [[ "$env" == "$mode" ]]; then
+      isMongoDbRequired=true
+    fi
+  done
+  if ! $isMongoDbRequired ; then
+    useMongoDb=true
+  fi
+fi
+
+# Is MongoDB Installed
+# If MongoDB is required, find out if it is installed.
+if $useMongoDb ; then    
+  mongoVersion=`mongo --version 2> /dev/null`
+  if [[ "$mongoVersion" == *"found"* ]]; then
+    mongoVersion="not installed."
+  else
+    isMongodbInstalled=true
+  fi
+fi
+
+# Is MongoDB Running
+# Check to see if MongoDB is already running.
+isMongodbRunning=false
+if $useMongoDb && $isMongodbInstalled ; then
+  type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+  if [[ $isMongodbCommandAvailable == true ]]; then
+    isMongodbRunningTxt=`service mongodb status`
+    if [[ "isMongodbRunningTxt" != "" ]]; then
+      isMongodbRunning=true
+    fi
+  fi
+fi
+
+# Forever 
+# -------------------------------------------------------- #
+# In order to run the server in certain modes or enviorments
 # we must make sure forever is installed.
 # For now, we want to make sure it is installed globally.
-# If no version number is returned from this command,
-# then the script will need to install forever.
-foreverVersionTxt="not required"
+
+foreverVersionTxt="not required"                           # Stores the version of forever.
+isForeverInstalled=false                                   # Stores if forever is installed or not.
+
+# Is Forever Installed
+# If we need forever, check if it is already installed.
 if $useForever ; then
-  if [[ "$nodeVersion" == "" ]]; then
-    foreverVersionTxt="unknown"
+  if ! $isNodeInstalled ; then
+    foreverVersionTxt="not installed."
   else
     foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
     foreverVersion=${foreverVersion##*@}
@@ -264,44 +344,78 @@ if $useForever ; then
       foreverVersionTxt="not installed"
     else
       foreverVersionTxt="v$foreverVersion"
+      isForeverInstalled=true
     fi
   fi
 fi
 
+
 # Is Modules Installed
+# -------------------------------------------------------- #
 # Check if the node modules used by this application are
 # installed or not.
 #
 # TODO:  Actually check for each module required, if the
 # module is missing then install it.
 isModulesInstalled=true
+
 if [[ ! -d $dir'/node_modules' ]]; then
   isModulesInstalled=false
 fi
 
-# Nginx Version
-# Check for the current nginx version, if nothing is 
-# returned then we know the script must install it.
-# however, we will not install nginx in modes where
-# it is not required.
-nginxVersion="not required"
-for mode in $nginxRequiredInModes
-do
-  if [[ "$env" == "$mode" ]]; then
-    nginxVersion=`nginx -v 2>&1`
-    if [[ "$nginxVersion" == *"found"* ]]; then
-      nginxVersion="not installed."
-    else 
-      nginxVersion=${nginxVersion##*/}
-      nginxVersion="v$nginxVersion"
+# Nginx
+# -------------------------------------------------------- #
+# In some cases we do not need nginx, so this will check to
+# see if nginx is required, installed, and/or running.
+
+nginxVersion="not required"                                # Stores the current nginx version, assume it is not installed.
+isNginxInstalled=false                                     # If nginx is installed or not. 
+
+# Is Nginx Required
+# Check to see if we need nginx.
+if $useNginx ; then
+  isNginxRequired=false
+  for mode in $nginxRequiredInModes
+  do
+    if [[ "$env" == "$mode" ]]; then
+      isNginxRequired=true
+    fi
+  done
+  if ! $isNginxRequired ; then
+    useNginx=false
+  fi
+fi
+
+# Is Nginx Installed
+# Check to see if nginx is installed.
+nginxVersion=`nginx -v 2>&1`
+if [[ "$nginxVersion" == *"found"* ]]; then
+  nginxVersion="not installed"
+else 
+  nginxVersion=${nginxVersion##*/}
+  nginxVersion="v$nginxVersion"
+  isNginxInstalled=true
+fi
+
+# Is Nginx Running
+# Check to see if nginx is already running.
+isNginxRunning=false
+if $isNginxInstalled ; then
+  type -P service nginx &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
+  if [[ $isNginxCommandAvailable == true ]]; then
+    isNginxRunningTxt=`service nginx status`
+    if [[ "isNginxRunningTxt" != "" ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isNginxRunningTxt" != *"unrecognized"* ]]; then
+      isNginxRunning=true
     fi
   fi
-done
+fi
 
 # SSL
+# -------------------------------------------------------- #
 # Check to see if the current mode requires ssl to be 
 # configured.  If it does, then set our ssl required flag.
 sslRequired=false;
+
 for mode in $sslRequiredInModes
 do
   if [[ "$env" == "$mode" ]]; then
@@ -309,27 +423,50 @@ do
   fi
 done
 
-# Is Apache Running
-# Apache cannot run at the same time as nginx. If we are 
-# installing or running nginx, then make sure we stop 
-# apache if it is installed.
-isApacheRunning=false
-type -P service apache2 &>/dev/null && isApache2CommandAvailable=true || isApache2CommandAvailable=false
-if [[ $isApache2CommandAvailable == true ]]; then
-  isApacheRunningTxt=`service apache2 status`
-  if [[ "$isApacheRunningTxt" != *"NOT"* ]] && [[ "$isApacheRunningTxt" != *"unrecognize"* ]] && [[ "$isApacheRunningTxt" != *"not"* ]]; then
-    isApacheRunning=true
+# Apache
+# -------------------------------------------------------- #
+# Instead of using nginx we could use apache.  This will
+# check to see if apache is required, installed, and/or
+# running.
+
+apacheVersion="not required"
+isApacheInstalled=false
+
+# Is Apache Required
+# Check to see if we need to use apache.
+if $useApache ; then
+  isApacheRequired=false
+  for mode in $apacheRequiredInModes
+  do
+    if [[ "$env" == "$mode" ]]; then
+      isApacheRequired=true
+    fi
+  done
+
+  if ! $isApacheRequired ; then
+    useApache=false
   fi
 fi
 
-# Is Nginx Running
-# Check to see if nginx is already running.
-isNginxRunning=false
-type -P service nginx &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
-if [[ $isNginxCommandAvailable == true ]]; then
-  isNginxRunningTxt=`service nginx status`
-  if [[ "isNginxRunningTxt" != "" ]] && [[ "$nginxVersion" != "not installed." ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isApacheRunningTxt" != *"unrecognized"* ]]; then
-    isNginxRunning=true
+# Is Apache Installed
+# Check to see if apache is installed.
+apacheVersion=`apache2 -v 2>&1`
+if [[ "$apacheVersion" == *"found"* ]]; then
+  apacheVersion="not installed"
+else 
+  isApacheInstalled=true
+fi
+
+# Is Apache Running
+# Check to see if Apache is running or not.
+isApacheRunning=false
+if $isApacheInstalled ; then
+  type -P service apache2 &>/dev/null && isApache2CommandAvailable=true || isApache2CommandAvailable=false
+  if [[ $isApache2CommandAvailable == true ]]; then
+    isApacheRunningTxt=`service apache2 status`
+    if [[ "$isApacheRunningTxt" != *"NOT"* ]] && [[ "$isApacheRunningTxt" != *"unrecognize"* ]] && [[ "$isApacheRunningTxt" != *"not"* ]]; then
+      isApacheRunning=true
+    fi
   fi
 fi
 
@@ -346,6 +483,48 @@ if [[ $printHelpMenu = true ]]; then
     isEnviormentSupportedTxt="Not Supported"
   fi
 
+  if $isNginxRunning ; then
+    isNginxRunningTxt="and is running."
+  else
+    isNginxRunningTxt="and is not running."
+  fi
+
+  if $isApacheRunning ; then
+    isApacheRunningTxt="and is running."
+  else
+    isApacheRunningTxt="and is not running."
+  fi
+
+  if $isMongodbRunning ; then
+    isMongodbRunningTxt="and is running."
+  else
+    isMongodbRunningTxt="and is not running."
+  fi
+
+  if $sslRequired ; then
+    isSslRequiredTxt="is required."
+  else
+    isSslRequiredTxt="is not required."
+  fi
+
+  if $isModulesInstalled ; then
+    isModulesInstalledTxt="are installed."
+  else
+    isModulesInstalledTxt="are not installed."
+  fi
+
+  if $useTail ; then
+    useTailTxt="don't use tail."
+  else
+    useTailTxt="use tail."
+  fi
+
+  if $isUserRoot ; then
+    isUserRootTxt="user is root.";
+  else
+    isUserRootTxt="user is not root.";
+  fi
+
   echo -e "Starts the node.js server with the correct settings.\n"
   echo -e "usage: \tstart.sh [options]\n"
   echo "options:"
@@ -359,16 +538,15 @@ if [[ $printHelpMenu = true ]]; then
   echo -e "\tNode.JS Enviorment: \t $env mode"
   if $debug ; then
     echo -e "\nScript Variables:"
-    echo -e "\troot permission: \t" $isUserRoot
-    echo -e "\tmode \t\t\t" $env
-    echo -e "\tnode version \t\t" $nodeVersion
-    echo -e "\tforever version \t" $foreverVersionTxt
-    echo -e "\tnginx version \t\t" $nginxVersion
-    echo -e "\tssl certs required \t" $sslRequired
-    echo -e "\tmodules installed \t" $isModulesInstalled
-    echo -e "\tapache running \t\t" $isApacheRunning
-    echo -e "\tnginx running \t\t" $isNginxRunning
-    echo -e "\ttail node log \t\t" $useTail
+    echo -e "\tapache:  \t" $apacheVersion $isApacheRunningTxt
+    echo -e "\tforever: \t" $foreverVersionTxt
+    echo -e "\tmongodb: \t" $mongoVersion $isMongodbRunningTxt
+    echo -e "\tnginx:   \t" $nginxVersion $isNginxRunningTxt
+    echo -e "\tnode:    \t" $nodeVersion
+    echo -e "\troot:    \t" $isUserRootTxt
+    echo -e "\tssl:     \t" $isSslRequiredTxt
+    echo -e "\tmodules: \t" $isModulesInstalledTxt
+    echo -e "\ttail:    \t" $useTailTxt
   fi
   exit
 fi
@@ -412,7 +590,7 @@ fi
 # -------------------------------------------------------- #
 
 # If node.js is not installed, then install it.
-if [[ $nodeVersion == "" ]]; then
+if $isNodeInstalled ; then
   echo "Installing node.js, this could take some time..."
   sudo apt-get update -y --force-yes -qq
   sudo apt-get install -y --force-yes -qq python-software-properties > /dev/null 2>&1
@@ -426,6 +604,7 @@ if [[ $nodeVersion == "" ]]; then
     exit 1
   else
     echo [ OK ] Node.js is now installed.
+    isNodeInstalled=true
   fi
 else
   echo [ OK ] Node.js is installed.
@@ -451,6 +630,7 @@ if [[ $isModulesInstalled == false ]]; then
   # Verify that we were successful.
   if [[ -d $dir'/node_modules' ]]; then
     echo [ OK ] Node modules were installed successfully.
+    isModulesInstalled=true
   else
     echo [ ERROR ] Node modules did not install properly.
     exit 1
@@ -469,7 +649,7 @@ if $useForever ; then
 
   # Check to make sure forever is installed globally, if it
   # is not, then install it.
-  if [[ "$foreverVersion" == "" ]]; then
+  if $isForeverInstalled ; then
     echo "Installing Forever Globally..."
     sudo npm install forever -g --loglevel error
 
@@ -483,6 +663,7 @@ if $useForever ; then
       exit 1
     else
       echo [ OK ] Forever is installed globally.
+      isForeverInstalled=true
     fi
   else
     echo [ OK ] Forever is installed globally.
@@ -495,7 +676,7 @@ fi
 # -------------------------------------------------------- #
 
 # Check if MongoDB is installed and install it if we need to.
-if useMongoDb && [[ "$mongoVersion" == "" ]]; then
+if $useMongoDb && $isMongodbInstalled ; then
   echo "Installing MongoDB, this could take some time..."
   sudo apt-key adv -qq --keyserver keyserver.ubuntu.com --recv 7F0CEB10 > /dev/null 2>&1
   echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list
@@ -508,6 +689,7 @@ if useMongoDb && [[ "$mongoVersion" == "" ]]; then
     echo [ ERROR ] MongoDB was not installed successfully.
   else
     echo [ OK ] $mongoVersion is installed.
+    isMongodbInstalled=true
   fi
 else
   echo [ OK ] $mongoVersion is installed.
@@ -519,20 +701,30 @@ fi
 # -------------------------------------------------------- #
 
 # Check to see if we need to install nginx.
-if [[ "$nginxVersion" != "not required" ]]; then
+if $useNginx; then
   
   # If nginx is required, ensure it is installed.
-  if [[ "$nginxVersion" == "" ]] || [[ "$nginxVersion" == "not installed." ]]; then
+  if $isNginxInstalled ; then
     echo "Installing nginx using apt-get, this could take some time..."
-    sudo apt-get install -q -y nginx
+    sudo apt-get install -qq -y --force-yes nginx
   else
     echo [ OK ] Nginx is installed.
   fi
 
+  # Check if our install was successfull.
+  nginxVersion=`nginx -v 2>&1`
+  if [[ "$nginxVersion" == *"found"* ]]; then
+    nginxVersion="not installed."
+  else 
+    nginxVersion=${nginxVersion##*/}
+    nginxVersion="v$nginxVersion"
+    isNginxInstalled=true
+  fi
+
   # If we are going to run nginx, then we need to make
   # sure apache is not running.
-  if $isApacheRunning ; then
-    echo [ Warning ] Stopping apache, nginx and apache cannot run at the same time.
+  if $isApacheInstalled && $isApacheRunning ; then
+    echo "[ Warning ] Stopping apache, nginx and apache cannot run at the same time."
 
     sudo /etc/init.d/apache2 stop
   else
@@ -613,15 +805,16 @@ fi
 # -------------------------------------------------------- #
 
 # Check to see if we are using nginx.
-if [[ "$nginxVersion" != "not required" ]]; then
+if $useNginx ; then
 
   if ! $isNginxRunning ; then
     sudo service nginx start
     
     # Check and see if nginx started successfully.
+    type -P service nginx &>/dev/null && isNginxCommandAvailable=true || isNginxCommandAvailable=false
     if [[ $isNginxCommandAvailable == true ]]; then
       isNginxRunningTxt=`service nginx status`
-      if [[ "isNginxRunningTxt" != "" ]] && [[ "$nginxVersion" != "not installed." ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isApacheRunningTxt" != *"unrecognized"* ]]; then
+      if [[ "isNginxRunningTxt" != "" ]] && [[ "$isNginxRunningTxt" != *"not"* ]] && [[ "$isNginxRunningTxt" != *"unrecognized"* ]]; then
         echo [ OK ] Nginx is now running.
         isNginxRunning=true
       else
@@ -634,6 +827,31 @@ if [[ "$nginxVersion" != "not required" ]]; then
   fi
 fi
 
+
+# -------------------------------------------------------- #
+#  Start MongoDB
+# -------------------------------------------------------- #
+if $useMongoDb && ! $isMongodbInstalled ; then
+
+  if ! $isMongodbRunning ; then
+    sudo service mongodb start
+
+    # Check to see if MongoDB is running.
+    type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+    if [[ $isMongodbCommandAvailable == true ]]; then
+      isMongodbRunningTxt=`service mongodb status`
+      if [[ "isMongodbRunningTxt" != "" ]] && [[ "$mongoVersion" != "" ]]; then
+        echo [ OK ] MongoDB is now running.
+        isMongodbRunning=true
+      else
+        echo [ Error ] MongoDB failed to start.
+        exit 1
+      fi
+    fi
+  else
+    echo [ OK ] MongoDB is running.
+  fi
+fi
 
 # -------------------------------------------------------- #
 # Create Resources & Start the Server
