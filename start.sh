@@ -321,7 +321,7 @@ if $useMongodb && $isMongodbInstalled ; then
   type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
   if [[ $isMongodbCommandAvailable == true ]]; then
     isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
-    if [[ "isMongodbRunningTxt" != "" ]]; then
+    if [[ "isMongodbRunningTxt" == *"process"* ]]; then
       isMongodbRunning=true
     fi
   fi
@@ -703,7 +703,7 @@ if $useMongodb && ! $isMongodbInstalled ; then
     type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
     if [[ $isMongodbCommandAvailable == true ]]; then
       isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
-      if [[ "isMongodbRunningTxt" != "" ]]; then
+      if [[ "isMongodbRunningTxt" == *"process"* ]]; then
         isMongodbRunning=true
       fi
     fi
@@ -858,7 +858,7 @@ if $useMongodb && $isMongodbInstalled ; then
     type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
     if [[ $isMongodbCommandAvailable == true ]]; then
       isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
-      if [[ "isMongodbRunningTxt" != "" ]]; then
+      if [[ "isMongodbRunningTxt" == *"process"* ]]; then
         echo [ OK ] MongoDB is now running.
         isMongodbRunning=true
       else
