@@ -339,21 +339,18 @@ isForeverInstalled=false                                   # Stores if forever i
 # Is Forever Installed
 # If we need forever, check if it is already installed.
 if $useForever ; then
-  if ! $isForeverInstalled ; then
-    foreverVersionTxt="not installed."
+  foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
+  foreverVersion=${foreverVersion##*@}
+  if [[ $foreverVersion == "" ]]; then
+    foreverVersionTxt="not installed"
   else
-    foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
-    foreverVersion=${foreverVersion##*@}
-    if [[ $foreverVersion == "" ]]; then
-      foreverVersionTxt="not installed"
-    else
-      foreverVersionTxt="v$foreverVersion"
-      isForeverInstalled=true
-    fi
+    foreverVersionTxt="v$foreverVersion"
+    isForeverInstalled=true
   fi
 else
   foreverVersionTxt="not required"
 fi
+
 
 
 # Is Modules Installed
