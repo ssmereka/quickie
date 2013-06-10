@@ -69,7 +69,7 @@ linuxOsEnv=""
 # You can specify the modes where MongoDB is required 
 # and the script will handle installation and 
 # configuration of MongoDB only when using those modes.
-useMongoDb=false
+useMongoDb=true
 
 mongodbRequiredInModes[0]="local"
 # mongodbRequiredInModes[1]="development"
@@ -303,8 +303,8 @@ fi
 # If MongoDB is required, find out if it is installed.
 if $useMongoDb ; then    
   mongoVersion=`mongo --version 2> /dev/null`
-  if [[ "$mongoVersion" == *"found"* ]]; then
-    mongoVersion="not installed."
+  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
+    mongoVersion="not installed"
   else
     isMongodbInstalled=true
   fi
@@ -514,9 +514,9 @@ if [[ $printHelpMenu = true ]]; then
   fi
 
   if $useTail ; then
-    useTailTxt="don't use tail."
-  else
     useTailTxt="use tail."
+  else
+    useTailTxt="don't use tail."
   fi
 
   if $isUserRoot ; then
@@ -685,7 +685,7 @@ if $useMongoDb && $isMongodbInstalled ; then
 
   # Verify the installation.
   mongoVersion=`mongo --version 2> /dev/null`
-  if [[ "$mongoVersion" == "" ]]; then
+  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
     echo [ ERROR ] MongoDB was not installed successfully.
   else
     echo [ OK ] $mongoVersion is installed.
