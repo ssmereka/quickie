@@ -35,7 +35,7 @@ module.exports = function(app, db, config) {
     next();
   }
 
-  function delete(req, res, next) {
+  function remove(req, res, next) {
     next();
   }
 
