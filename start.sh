@@ -318,11 +318,17 @@ fi
 # Check to see if MongoDB is already running.
 isMongodbRunning=false
 if $useMongodb && $isMongodbInstalled ; then
-  type -P service &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+  echo "Mongodb is installed and enabled";
+  type -P service &> /dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+  echo "Mongodb type p" $isMongodbCommandAvailable
   if [[ $isMongodbCommandAvailable == true ]]; then
     isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
+    echo "Mongodb service text " $isMongodbRunningTxt
     if [[ "isMongodbRunningTxt" == *"process"* ]]; then
       isMongodbRunning=true
+      echo "YESS"
+    else
+      echo "cRAP"
     fi
   fi
 fi
@@ -700,7 +706,7 @@ if $useMongodb && ! $isMongodbInstalled ; then
     isMongodbInstalled=true
     
     # Check if mongodb is running after we did the install.
-    type -P service &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+    type -P service &> /dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
     if [[ $isMongodbCommandAvailable == true ]]; then
       isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
       if [[ "isMongodbRunningTxt" == *"process"* ]]; then
@@ -848,6 +854,9 @@ fi
 # -------------------------------------------------------- #
 #  Start MongoDB
 # -------------------------------------------------------- #
+
+
+
 if $useMongodb && $isMongodbInstalled ; then
 
   if ! $isMongodbRunning ; then
