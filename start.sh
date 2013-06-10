@@ -69,7 +69,7 @@ linuxOsEnv=""
 # You can specify the modes where MongoDB is required 
 # and the script will handle installation and 
 # configuration of MongoDB only when using those modes.
-useMongoDb=true
+useMongodb=true
 
 mongodbRequiredInModes[0]="local"
 # mongodbRequiredInModes[1]="development"
@@ -272,6 +272,8 @@ isNodeInstalled=false
 
 if [[ "$nodeVersion" == "" ]]; then                        # If the version number is blank, we know it is not installed.
   isNodeInstalled=true;
+else
+  nodeVersion="not installed."
 fi
 
 # MongoDB
@@ -286,34 +288,36 @@ isMongodbInstalled=false                                   # Is mongo install?  
 # Is MongoDB Required
 # Check if MongoDB is required before we start the node 
 # server.
-if $useMongoDb ; then
-  isMongoDbRequired=false
+if $useMongodb ; then
+  isMongodbRequired=false
   for mode in $mongodbRequiredInModes
   do
     if [[ "$env" == "$mode" ]]; then
-      isMongoDbRequired=true
+      isMongodbRequired=true
     fi
   done
-  if ! $isMongoDbRequired ; then
-    useMongoDb=true
+  if ! $isMongodbRequired ; then
+    useMongodb=true
   fi
 fi
 
 # Is MongoDB Installed
 # If MongoDB is required, find out if it is installed.
-if $useMongoDb ; then    
+if $useMongodb ; then    
   mongoVersion=`mongo --version 2> /dev/null`
-  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
+  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"unrecognized"* ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
     mongoVersion="not installed"
   else
     isMongodbInstalled=true
   fi
+else
+  mongoVersion="not required"
 fi
 
 # Is MongoDB Running
 # Check to see if MongoDB is already running.
 isMongodbRunning=false
-if $useMongoDb && $isMongodbInstalled ; then
+if $useMongodb && $isMongodbInstalled ; then
   type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
   if [[ $isMongodbCommandAvailable == true ]]; then
     isMongodbRunningTxt=`service mongodb status`
@@ -347,6 +351,8 @@ if $useForever ; then
       isForeverInstalled=true
     fi
   fi
+else
+  foreverVersionTxt="not required"
 fi
 
 
@@ -676,16 +682,18 @@ fi
 # -------------------------------------------------------- #
 
 # Check if MongoDB is installed and install it if we need to.
-if $useMongoDb && $isMongodbInstalled ; then
+if $useMongodb && ! $isMongodbInstalled ; then
   echo "Installing MongoDB, this could take some time..."
   sudo apt-key adv -qq --keyserver keyserver.ubuntu.com --recv 7F0CEB10 > /dev/null 2>&1
+  
+  # TODO: Hide this line from output.
   echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list
   sudo apt-get update -y --force-yes -qq
   sudo apt-get install -y --force-yes -qq mongodb-10gen
 
   # Verify the installation.
   mongoVersion=`mongo --version 2> /dev/null`
-  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
+  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"unrecognized"* ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
     echo [ ERROR ] MongoDB was not installed successfully.
   else
     echo [ OK ] $mongoVersion is installed.
@@ -831,7 +839,7 @@ fi
 # -------------------------------------------------------- #
 #  Start MongoDB
 # -------------------------------------------------------- #
-if $useMongoDb && ! $isMongodbInstalled ; then
+if $useMongodb && $isMongodbInstalled ; then
 
   if ! $isMongodbRunning ; then
     sudo service mongodb start
