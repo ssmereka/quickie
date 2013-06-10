@@ -320,7 +320,7 @@ isMongodbRunning=false
 if $useMongodb && $isMongodbInstalled ; then
   type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
   if [[ $isMongodbCommandAvailable == true ]]; then
-    isMongodbRunningTxt=`service mongodb status`
+    isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
     if [[ "isMongodbRunningTxt" != "" ]]; then
       isMongodbRunning=true
     fi
@@ -631,7 +631,7 @@ if [[ $isModulesInstalled == false ]]; then
 
   # Install all the node application's modules, but only
   # display warning messages to the user.
-  sudo npm install --loglevel error
+  sudo npm install --loglevel silent
 
   # Verify that we were successful.
   if [[ -d $dir'/node_modules' ]]; then
@@ -687,7 +687,7 @@ if $useMongodb && ! $isMongodbInstalled ; then
   sudo apt-key adv -qq --keyserver keyserver.ubuntu.com --recv 7F0CEB10 > /dev/null 2>&1
   
   # TODO: Hide this line from output.
-  echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list
+  echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list > /dev/null 2>&1
   sudo apt-get update -y --force-yes -qq
   sudo apt-get install -y --force-yes -qq mongodb-10gen
 
@@ -696,13 +696,13 @@ if $useMongodb && ! $isMongodbInstalled ; then
   if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"unrecognized"* ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
     echo [ ERROR ] MongoDB was not installed successfully.
   else
-    echo [ OK ] $mongoVersion is installed.
+    echo [ OK ] $mongoVersion is now installed.
     isMongodbInstalled=true
     
     # Check if mongodb is running after we did the install.
     type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
     if [[ $isMongodbCommandAvailable == true ]]; then
-      isMongodbRunningTxt=`service mongodb status`
+      isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
       if [[ "isMongodbRunningTxt" != "" ]]; then
         isMongodbRunning=true
       fi
@@ -851,13 +851,14 @@ fi
 if $useMongodb && $isMongodbInstalled ; then
 
   if ! $isMongodbRunning ; then
-    sudo service mongodb start
+    sleep 3
+    sudo service mongodb restart
 
     # Check to see if MongoDB is running.
     type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
     if [[ $isMongodbCommandAvailable == true ]]; then
-      isMongodbRunningTxt=`service mongodb status`
-      if [[ "isMongodbRunningTxt" != "" ]] && [[ "$mongoVersion" != "" ]]; then
+      isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
+      if [[ "isMongodbRunningTxt" != "" ]]; then
         echo [ OK ] MongoDB is now running.
         isMongodbRunning=true
       else
