@@ -698,6 +698,15 @@ if $useMongodb && ! $isMongodbInstalled ; then
   else
     echo [ OK ] $mongoVersion is installed.
     isMongodbInstalled=true
+    
+    # Check if mongodb is running after we did the install.
+    type -P service mongodb &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+    if [[ $isMongodbCommandAvailable == true ]]; then
+      isMongodbRunningTxt=`service mongodb status`
+      if [[ "isMongodbRunningTxt" != "" ]]; then
+        isMongodbRunning=true
+      fi
+    fi
   fi
 else
   echo [ OK ] $mongoVersion is installed.
