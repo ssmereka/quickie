@@ -339,7 +339,7 @@ isForeverInstalled=false                                   # Stores if forever i
 # Is Forever Installed
 # If we need forever, check if it is already installed.
 if $useForever ; then
-  if ! $isNodeInstalled ; then
+  if ! $isForeverInstalled ; then
     foreverVersionTxt="not installed."
   else
     foreverVersion=`npm list -g --loglevel silent | grep forever@ 2> /dev/null`
@@ -655,7 +655,7 @@ if $useForever ; then
 
   # Check to make sure forever is installed globally, if it
   # is not, then install it.
-  if $isForeverInstalled ; then
+  if ! $isForeverInstalled ; then
     echo "Installing Forever Globally..."
     sudo npm install forever -g --loglevel error
 
