@@ -13,18 +13,27 @@ A node.js template to get you started quickly so you can focus on your applicati
 
     ./start.sh -l -t
 
-3. Start modifying your node server.  No need to restart the server, changes will be pushed live every time you save.
+3. Start coding.  No need to restart the server, changes will be live when you save a file.
 
 
 ## Config
+Settings for your node application can be stored in the config file.  The config file produces a single JSON object that gets passed around your node application.  You can even configure different settings for different enviorments your appliction will run in.  The preconfigured enviorments are local, development, and production.
 
+Before starting your server in a non-local enviorment, you may want to take a minute and update your configuration file.
 
 
 ## Model, View, Controller
 The template is already setup to use the MVC pattern.  Looking at the code you will see folders labeled as model, view, and controller.
 
 ### Model
+Everything related to storing your data can be found in the models directory.  Database schemas, functions, and so on.  Although you can use many different types of databases node, this template is currently setup to use the following:
 
+#### MongoDB and Mongoose
+MongoDB is a "semi" non-relational database that stores data in documents.  These documents are basically JSON objects and arrays, which works perfectly with the way node.js was designed.  When combined with Mongoose.JS it becomes very easy to store and retrieve data.
+
+The template is preconfigured to work with MongoDB and Mongoose.  If you want to use these, your work is already done.
+
+...todo: explain structure and example models here.
 
 ### Controller
 These files are the backend of the database.  They should respond to the restfull structure of Node.JS by defining routes.
