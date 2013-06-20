@@ -8,6 +8,15 @@ module.exports = function(app, db, config) {
   /********************************************************/
   /************************ Routes ************************/
 
+  var sanitize = require('../modules/sanitize');
+  app.get('/', function(req, res, next) {
+    console.log(sanitize.string("undefined"));
+    console.log(sanitize.string(undefined));
+    if(sanitize.string(undefined) == undefined)
+      console.log("Undefined good");
+    if(sanitize.string("undefined") == undefined)
+      console.log("Undefined String Good");
+  });
   app.get('/users.:format', users);
   app.get('/users/:userId.:format', user);
 
