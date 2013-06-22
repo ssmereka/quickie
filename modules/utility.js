@@ -3,54 +3,80 @@
  * -----------------------------------------------------------
  */
 
+var bcrypt      = require('bcrypt'),                                                // Include bcrypt for password hashing.
+    saltRounds  = 10,                                                               // Number of rounds used to caclulate a salt for bcrypt password hashing.
+    crypto      = require('crypto');
+
 var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
 
-exports.loadSchemaObject = function loadSchemaObjectFunction(Schema, populateFields)  {
+exports.loadSchemaObject = function(Schema, populateFields, populateSelects, populateModels, populateConditions)  {
   return function(req, res, next) {
+
     if(req.params.id) {
-      if(populateFields && populateFields.length > 0) {
-        Schema.findOne({'_id': req.params.id}).populate(populateFields).exec(function(err, obj) {
-          if(err) {
-            req.errorMessages.push(err);
-            req.queryResult = undefined;
-          }
-          else
-            req.queryResult = obj;
-          return next();
-        });
-
-
-exports.loadSchemaObject = function loadSchemaObjectFunction(Schema, populateFields)  {
-  return function(req, res, next) {
-    if(Schema && req.params.id) {
-      if(populateFields && populateFields.length > 0) {
-        Schema.findOne({'_id': req.params.id}).populate(populateFields).exec(function(err, obj) {
-          if(err) {
-            if(req.errorMessages == undefined)
-              req.errorMessages = [];
-            req.errorMessages.push(err);
-            req.queryResult = undefined;
-          }
-          else
-            req.queryResult = obj;
-          return next();
-        });
-      } else {
-        Schema.findById(req.params.id, function(err, obj) {
-          if(err) {
-            req.errorMessages.push(err);
-            req.queryResult = undefined;
-          }
-          else
-            req.queryResult = obj;
-          return next();
-        });
-      }
+      Schema.findOne({'_id': req.params.id}).populate(populateFields, populateSelects, populateModels, populateConditions).exec(function(err, obj) {
+        if(err) {
+          req.errorMessages.push(err);
+          req.queryResult = undefined;
+        }
+        else
+          req.queryResult = obj;
+        return next();
+      });
     } else {
       return next();
     }
   }
+};
+
+exports.render = function(res, page, params) {
+  res.render(page, params);
 }
+
+exports.send = function(req, res, obj) {
+  if(req.isHtml)
+    return res.send(obj);
+
+  // Throw error.
+}
+
+
+exports.generateHashedKey = function(keyLength, next) {
+  require('./utility').generateKey(keyLength, function(err, key) {
+    if(key === undefined || key === null || key === "")
+      return next(new Error('Key generation failed.'));
+
+    bcrypt.hash(key, saltRounds, function(err, hash) {       // Generate a salt and hash
+      if(err) return next(err);                              // Let the next function handle the error.
+      
+      return next(null, hash);                               // Set the user's password hash
+    });
+  });
+}
+
+exports.generateHashedKeySync = function(keyLength) {
+  try {
+    return bcrypt.hashSync(require('./utility').generateKeySync(keyLength).toLowerCase(), saltRounds);
+  } catch(ex) {
+    console.log("GenerateHashKeySync(" + keyLength + "): Error " + ex);
+    return undefined;
+  }
+}
+
+exports.generateKey = function(keyLength, next) {
+  crypto.randomBytes(keyLength, function(ex, buf) {
+    next(null, buf.toString('hex').toLowerCase());
+  });
+}
+
+exports.generateKeySync = function(keyLength) {
+  try {
+    return crypto.randomBytes(keyLength).toString('hex').toLowerCase();
+  } catch(ex) {
+    console.log("GenerateBaseKeySync(" + keyLength + "): Error " + ex);
+    return undefined;
+  }
+}
+
 
 /* Copy Object
  * Create a copy of one object to another.
