@@ -28,6 +28,11 @@
 # You can configure the script to work how you want it to.
 # Simply modify the vairables in this section.
 
+# Application Name
+# The name you are using for your node application.
+appName=MyAppName
+
+
 # Default Mode for all devices.
 # If your enviorment mode is not set, then this mode will
 # be enforced.
@@ -39,7 +44,7 @@ env_default="development"
 # Don't place logs within in the applications root
 # directory or anywhere below it.  Otherwise forever will
 # restart everytime a log is written.
-log_folder="/var/log/keys"
+log_folder="/var/log/my-app-name"
 
 
 # Default Mac OS Enviorment
@@ -49,7 +54,7 @@ log_folder="/var/log/keys"
 # to set a default value.
 #
 # Optional values: local, development, or production
-macOsEnv=""
+macOsEnv="local"
 
 
 # Default Linux OS Enviorment
@@ -72,8 +77,6 @@ linuxOsEnv=""
 useMongodb=true
 
 mongodbRequiredInModes[0]="local"
-# mongodbRequiredInModes[1]="development"
-# mongodbRequiredInModes[2]="production"
 
 
 # Nginx
@@ -84,21 +87,28 @@ mongodbRequiredInModes[0]="local"
 # nginx only when using those modes.
 useNginx=true
 
-# nginxRequiredInModes[0]="local"
-nginxRequiredInModes[1]="development"
-nginxRequiredInModes[2]="production"
+nginxRequiredInModes[0]="development"
+nginxRequiredInModes[1]="production"
+
 
 # Apache
 # TODO: Make this work with apache
 useApache=false
 
-# apacheRequiredInModes[0]="local"
 apacheRequiredInModes[0]="development"
-apacheRequiredInModes[0]="production"
+apacheRequiredInModes[1]="production"
 
 
 # SSL
-# TODO: Configure ssl
+# If you use SSL, then set this variable to true so the
+# script knows to install and configure anything related
+# to ssl.  You can specify the modes where ssl is 
+# required and the scrip will only perform installation
+# and configuration for the required modes.
+useSsl=true
+
+sslRequiredInModes[0]="development"
+sslRequiredInModes[1]="production"
 
 # -------------------------------------------------------- #
 # STOP -- You Don't Need to Change Anything Below  -- STOP
@@ -126,11 +136,9 @@ isForceScript=false           # Should we force the script to run, even if it is
 
 envUname=`uname`
 envNodeName=`uname -n`
-envOsName=`uname -o`
 envKernalName=`uname -s`
 envMachineName=`uname -m`
 envProcessor=`uname -p`
-envHardwarePlatform=`uname -i`
 envKernalVersion=`uname -v`
 envKernalRelease=`uname -r`
 
@@ -161,6 +169,33 @@ if [[ "$envUname" == "Linux" ]]; then
   fi
 fi
 
+# Mac OS
+if [[ "$envUname" == 'Darwin' ]]; then
+  # Set the default mac node.js enviorment.
+  if [[ "$env" == "" ]]; then
+    env=$macOsEnv
+  fi
+
+  # Set our Enviorement Name and Version for Mac
+  envPrettyName=`sw_vers | grep ProductName`
+  envPrettyName=${envPrettyName#ProductName:}
+  envVersion=`sw_vers | grep ProductVersion`
+  envVersion=${envVersion#ProductVersion:}
+  envPrettyName="$envPrettyName $envVersion"
+
+  isEnviormentSupported=true
+fi
+
+# Get more information about the OS.
+if [[ "$env" != "$macOsEnv" ]]; then
+  envOsName=`uname -o`
+  envHardwarePlatform=`uname -i`
+else
+  envOsName=""
+  envHardwarePlatform=""
+fi
+
+
 # Windows (Cygwin)
 if [[ "$envOsName" == "Cygwin" ]]; then
   
@@ -173,16 +208,6 @@ if [[ "$envOsName" == "Cygwin" ]]; then
   fi
 fi
 
-
-# Mac OS
-if [[ "$envUname" == 'Darwin' ]]; then
-  # Set the default mac node.js enviorment.
-  if [[ "$env" == "" ]]; then
-    env=$macOsEnv
-  fi
-
-  isEnviormentSupported=true
-fi
 
 
 # -------------------------------------------------------- #
@@ -268,11 +293,10 @@ fi
 # Node.JS must be installed to run the server, this will
 # check to see if node is installed and what version.
 nodeVersion=`node -v 2> /dev/null`                         # Get the node version number
-isNodeInstalled=false
+isNodeInstalled=true
 
 if [[ "$nodeVersion" == "" ]]; then                        # If the version number is blank, we know it is not installed.
-  isNodeInstalled=true;
-else
+  isNodeInstalled=false;
   nodeVersion="not installed."
 fi
 
@@ -297,7 +321,7 @@ if $useMongodb ; then
     fi
   done
   if ! $isMongodbRequired ; then
-    useMongodb=true
+    useMongodb=false
   fi
 fi
 
@@ -416,15 +440,17 @@ fi
 # SSL
 # -------------------------------------------------------- #
 # Check to see if the current mode requires ssl to be 
-# configured.  If it does, then set our ssl required flag.
-sslRequired=false;
+# configured and set our use ssl flag.
 
-for mode in $sslRequiredInModes
-do
-  if [[ "$env" == "$mode" ]]; then
-    sslRequired=true
-  fi
-done
+if $useSsl ; then
+  useSsl=false;
+  for mode in $sslRequiredInModes
+  do
+    if [[ "$env" == "$mode" ]]; then
+      useSsl=true
+    fi
+  done
+fi
 
 # Apache
 # -------------------------------------------------------- #
@@ -492,10 +518,22 @@ if [[ $printHelpMenu = true ]]; then
     isNginxRunningTxt="and is not running."
   fi
 
+  if ! $useNginx ; then
+    isNginxRunningTxt="$isNginxRunningTxt Not Required."
+  else
+    isNginxRunningTxt="$isNginxRunningTxt  Required."
+  fi
+
   if $isApacheRunning ; then
     isApacheRunningTxt="and is running."
   else
     isApacheRunningTxt="and is not running."
+  fi
+
+  if ! $useApache ; then
+    isApacheRunningTxt="$isApacheRunningTxt Not Required."
+  else
+    isApacheRunningTxt="$isApacheRunningTxt  Required."
   fi
 
   if $isMongodbRunning ; then
@@ -504,7 +542,13 @@ if [[ $printHelpMenu = true ]]; then
     isMongodbRunningTxt="and is not running."
   fi
 
-  if $sslRequired ; then
+  if ! $useMongodb ; then
+    isMongodbRunningTxt="$isMongodbRunningTxt Not Required."
+  else
+    isMongodbRunningTxt="$isMongodbRunningTxt  Required."
+  fi
+
+  if $useSsl ; then
     isSslRequiredTxt="is required."
   else
     isSslRequiredTxt="is not required."
@@ -593,7 +637,7 @@ fi
 # -------------------------------------------------------- #
 
 # If node.js is not installed, then install it.
-if $isNodeInstalled ; then
+if ! $isNodeInstalled ; then
   echo "Installing node.js, this could take some time..."
   sudo apt-get update -y --force-yes -qq
   sudo apt-get install -y --force-yes -qq python-software-properties > /dev/null 2>&1
@@ -679,34 +723,36 @@ fi
 # -------------------------------------------------------- #
 
 # Check if MongoDB is installed and install it if we need to.
-if $useMongodb && ! $isMongodbInstalled ; then
-  echo "Installing MongoDB, this could take some time..."
-  sudo apt-key adv -qq --keyserver keyserver.ubuntu.com --recv 7F0CEB10 > /dev/null 2>&1
-  
-  # TODO: Hide this line from output.
-  echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list > /dev/null 2>&1
-  sudo apt-get update -y --force-yes -qq
-  sudo apt-get install -y --force-yes -qq mongodb-10gen
-
-  # Verify the installation.
-  mongoVersion=`mongo --version 2> /dev/null`
-  if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"unrecognized"* ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
-    echo [ ERROR ] MongoDB was not installed successfully.
-  else
-    echo [ OK ] $mongoVersion is now installed.
-    isMongodbInstalled=true
+if $useMongodb ; then
+  if ! $isMongodbInstalled ; then
+    echo "Installing MongoDB, this could take some time..."
+    sudo apt-key adv -qq --keyserver keyserver.ubuntu.com --recv 7F0CEB10 > /dev/null 2>&1
     
-    # Check if mongodb is running after we did the install.
-    type -P service &> /dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
-    if [[ $isMongodbCommandAvailable == true ]]; then
-      isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
-      if [[ "$isMongodbRunningTxt" == *"process"* ]]; then
-        isMongodbRunning=true
+    # TODO: Hide this line from output.
+    echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list > /dev/null 2>&1
+    sudo apt-get update -y --force-yes -qq
+    sudo apt-get install -y --force-yes -qq mongodb-10gen
+
+    # Verify the installation.
+    mongoVersion=`mongo --version 2> /dev/null`
+    if [[ "$mongoVersion" == "" ]] || [[ "$mongoVersion" == *"unrecognized"* ]] || [[ "$mongoVersion" == *"found"* ]] || [[ "$mongoVersion" == *"not installed"* ]]; then
+      echo [ ERROR ] MongoDB was not installed successfully.
+    else
+      echo [ OK ] $mongoVersion is now installed.
+      isMongodbInstalled=true
+      
+      # Check if mongodb is running after we did the install.
+      type -P service &> /dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
+      if [[ $isMongodbCommandAvailable == true ]]; then
+        isMongodbRunningTxt=`service mongodb status` > /dev/null 2>&1
+        if [[ "$isMongodbRunningTxt" == *"process"* ]]; then
+          isMongodbRunning=true
+        fi
       fi
     fi
+  else
+    echo [ OK ] $mongoVersion is installed.
   fi
-else
-  echo [ OK ] $mongoVersion is installed.
 fi
 
 
@@ -718,7 +764,7 @@ fi
 if $useNginx; then
   
   # If nginx is required, ensure it is installed.
-  if $isNginxInstalled ; then
+  if ! $isNginxInstalled ; then
     echo "Installing nginx using apt-get, this could take some time..."
     sudo apt-get install -qq -y --force-yes nginx
   else
@@ -754,16 +800,18 @@ if $useNginx; then
     # TODO: Actually configure nginx to startup and shutdown.
     echo [ ERROR ] Nginx is not configured to start on boot.
     echo [ ERROR ] Nginx is not configured to stop on shutdown.
-    exit 1
+    if ! $isForceScript ; then
+      exit 1
+    fi
   fi
 
   # If our nginx config file is not symbolically linked to
   # available sites, then make a link.
-  if ! [ -e /etc/nginx/sites-available/keys ]; then
-    sudo ln -s $dir/config/nginx /etc/nginx/sites-available/keys
+  if ! [ -e /etc/nginx/sites-available/$appName ]; then
+    sudo ln -s $dir/config/nginx /etc/nginx/sites-available/$appName
 
-    if ! [ -e /etc/nginx/sites-available/keys ]; then
-      echo [ ERROR ] Nginx could not symbolically link $dir/config/nginx to /etc/nginx/sites-available/keys.
+    if ! [ -e /etc/nginx/sites-available/$appName ]; then
+      echo [ ERROR ] Nginx could not symbolically link $dir/config/nginx to /etc/nginx/sites-available/$appName.
       exit 1
     else
       echo [ OK ] Nginx available sites are now configured.
@@ -774,11 +822,11 @@ if $useNginx; then
 
   # If our nginx config file is not symbolically linked to
   # enabled sites, then make a link.
-  if ! [ -e /etc/nginx/sites-enabled/keys ]; then
-    sudo ln -s $dir/config/nginx /etc/nginx/sites-enabled/keys
+  if ! [ -e /etc/nginx/sites-enabled/$appName ]; then
+    sudo ln -s $dir/config/nginx /etc/nginx/sites-enabled/$appName
 
-    if ! [ -e /etc/nginx/sites-enabled/keys ]; then
-      echo [ ERROR ] Nginx could not symbolically link $dir/config/nginx to /etc/nginx/sites-enabled/keys.
+    if ! [ -e /etc/nginx/sites-enabled/$appName ]; then
+      echo [ ERROR ] Nginx could not symbolically link $dir/config/nginx to /etc/nginx/sites-enabled/$appName.
       exit 1
     else
       echo [ OK ] Nginx enabled sites are now configured.
@@ -795,14 +843,14 @@ fi
 
 # Check if the enviorment requires us to use SSL.  If it
 # does then make sure it is configured.
-if $sslRequired ; then
+if $useSsl ; then
 
   # If our ssl certificate file is not symbolically linked, 
   # then link it.
-  if ! [ -e /etc/ssl/livioconnect.com.pem ]; then
-    sudo ln -s $dir/config/livioconnect.com.pem /etc/ssl/livioconnect.com.pem
+  if ! [ -e /etc/ssl/$appName.pem ]; then
+    sudo ln -s $dir/config/ssl /etc/ssl/$appName.pem
 
-    if ! [ -e /etc/ssl/livioconnect.com.pem ]; then
+    if ! [ -e /etc/ssl/$appName.pem ]; then
       echo [ ERROR ] Could not symbolically link the ssl certificate.
       exit 1
     else
@@ -852,7 +900,7 @@ if $useMongodb && $isMongodbInstalled ; then
 
   if ! $isMongodbRunning ; then
     sleep 3
-    sudo service mongodb restart
+    #sudo service mongodb restart
 
     # Check to see if MongoDB is running.
     type -P service &>/dev/null && isMongodbCommandAvailable=true || isMongodbCommandAvailable=false
@@ -879,6 +927,10 @@ fi
 # folder and clear the old node log file.  Then start the
 # server and return.
 if $useForever ; then
+
+  if ! [ -e .foreverignore ]; then
+    touch .foreverignore
+  fi
   
   if [[ ! -d $log_folder ]]; then
     sudo mkdir "$log_folder"
@@ -894,7 +946,7 @@ if $useForever ; then
   # Clear the node log file.
   sudo echo "START NODE LOG FILE" > "$log_folder/node.log"
 
-  sudo NODE_ENV="$env" forever --minUptime 1000 --spinSleepTime 1000 -a -w -l "$log_folder/node.log" start server.js 
+  sudo NODE_ENV="$env" forever --minUptime 1000 --spinSleepTime 1000 -a -l -w "$log_folder/node.log" start server.js 
 else 
   
   # Run the server using node.
