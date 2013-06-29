@@ -21,7 +21,7 @@ module.exports = function(app, db, config) {
     name:               { type: String, trim: true },                                 // User's name.
     lastUpdated:        { type: Date, default: Date.now },                            // When this user object was last updated.
     lastUpdatedBy:      { type: ObjectId, ref: 'User' },                              // Who was the last person to update this user object.
-    passwordHash:       { type: String, required: true },                             // A hash generated from the user's password.  Never store a plain text password.
+    passwordHash:       { type: String },                             // A hash generated from the user's password.  Never store a plain text password.
     passwordReset:      { type: String, default: utility.generateHashedKeySync(24) }, // A hash generated to reset a user's password.  This should never be plain text.
     roles:              [{ type: ObjectId, ref: 'UserRole' }],                        // A list of roles the user is a part of.  Roles are used for things like authentication.
     securityQuestion:   { type: String },                                             // Challenge question given to a user when they try to reset their password.
@@ -43,22 +43,12 @@ module.exports = function(app, db, config) {
    * and sets it as the user's password.
    * Returns true if the password was set successfully.
    */
-  User.virtual('password').set(function(password, next) {
+  User.virtual('password').set(function(password) {
     if(password === undefined || password === null || password === "")
       password = new ObjectId().toString();
-    
-    if(next) {
-      bcrypt.hash(password, saltRounds, function(err, hash) {                       // Generate a salt and hash
-        if(err) return next(err);                                                   // Let the next function handle the error.
-        this.password_hash = hash;                                                  // Set the user's password hash
-        this.password_reset = generateKeySync(24);
-        return next();
-      });
-    } else {
-      this.password_hash = bcrypt.hashSync(passwordString, saltRounds);             // Synchronous call to create a bcrypt salt & hash, then set that hash as the password.
-      this.password_reset = generateKeySync(24);
-      return true;
-    }
+
+    this.password_hash = bcrypt.hashSync(password, saltRounds);             // Synchronous call to create a bcrypt salt & hash, then set that hash as the password.
+    this.password_reset = utility.generateKeySync(24);
   });
 
   /* Get Security Answer
@@ -113,6 +103,17 @@ module.exports = function(app, db, config) {
   };
 
 
+  User.methods.delete = function(userId, next) {
+    var user = this;
+
+    user.remove(function(err, user) {
+      if(err && next !== undefined) return next(err, undefined, false);
+
+      if(next !== undefined)
+        return next(undefined, user, true);
+    });
+  }
+
   /* Update
    * Takes in an object parameter and updates the appropriate user fields.
    */
@@ -140,6 +141,12 @@ module.exports = function(app, db, config) {
 
         case 'activated':
           value = sanitize.boolean(obj[key]);
+          break;
+
+        case 'password':
+          value = sanitize.string(obj[key]);
+          if(value !== undefined)
+            user.password = value;
           break;
 
         default:
@@ -172,9 +179,12 @@ module.exports = function(app, db, config) {
   User.pre('save', function(next) {
     var user = this;
 
-    if(request.setValue(user.name) === undefined) {
+    if(sanitize.string(user.name) === undefined) {
       return next(new Error('Please enter a valid name.'));
     }
+
+    if(sanitize.string(user.password) === undefined)
+      return next(new Error('Please enter a password.'));
 
     try {
       check(this.email).len(6,64).isEmail();                                        // Check if string is a valid email.

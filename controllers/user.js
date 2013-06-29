@@ -1,5 +1,5 @@
 //var sanitize = require('../modules/sanitize');
-  var utility = 
+var utility = require("../modules/utility");
 
 module.exports = function(app, db, config) {
   
@@ -43,22 +43,50 @@ module.exports = function(app, db, config) {
       if(req.isHtml)
         return utility.render(res, 'user/users', { users: users });
 
-      utility.send(req, res, users);
+      utility.send(users, req, res);
     });
   }
 
   /* Create
    */
   function create(req, res, next) {
-    next();
+    console.log(req.body);
+    var user = new User();
+    user.update(req.body, (req.user) ? req.user._id : undefined, function(err, user) {
+      if(err) next(err);
+
+      if(req.isHtml)
+        return utility.render(res, 'user/user', { user: user });
+
+      utility.send(user, req, res);
+    });
   }
 
   function update(req, res, next) {
-    next();
+    var user = req.queryResult;
+    if( ! req.queryResult) return next();
+
+    user.update(req.body, (req.user) ? req.user._id : undefined, function(err, user) {
+      if(req.isHtml)
+        return res.redirect('/users.html');
+
+      utility.send(user, req, res);
+    });
   }
 
   function remove(req, res, next) {
-    next();
+    var user = req.queryResult;
+    if( ! req.queryResult) return next();
+
+    console.log("Remove user");
+    user.delete((req.user) ? req.user._id : undefined, function(err, user, success) {
+      if(err) return next(err);
+
+      if(req.isHtml)
+        return res.redirect('/users.html');
+      console.log("removed!");
+      utility.send(user, req, res);        
+    });
   }
 
 };

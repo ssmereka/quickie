@@ -26,6 +26,9 @@ module.exports = function(app, db, config) {
   function setViewLocalVariables(req, res, next) {
     if(req === undefined || req.isApiRequest === true)
       return next();
+
+    req.errorMessages = [];
+
     app.locals({
       _debug: config.debug,  
       serverEnviorment: app.settings.env,

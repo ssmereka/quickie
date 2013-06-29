@@ -32,11 +32,20 @@ exports.render = function(res, page, params) {
   res.render(page, params);
 }
 
-exports.send = function(req, res, obj) {
-  if(req.isHtml)
+exports.send = function(obj, req, res, next) {
+  if(req.isJson)
     return res.send(obj);
 
-  // Throw error.
+  if(req.isTxt)
+    return res.type('txt').send(JSON.stringify(obj));
+
+  if(next !== undefined)
+    return next();
+
+  // Default to JSON if we can't continue on.
+  if(obj !== undefined) {
+    return res.send(obj);
+  }
 }
 
 
