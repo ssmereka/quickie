@@ -5,7 +5,8 @@
 
 var bcrypt      = require('bcrypt'),                                                // Include bcrypt for password hashing.
     saltRounds  = 10,                                                               // Number of rounds used to caclulate a salt for bcrypt password hashing.
-    crypto      = require('crypto');
+    crypto      = require('crypto'), 
+    sanitize    = require('./sanitize');
 
 var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
 
@@ -33,10 +34,10 @@ exports.render = function(res, page, params) {
 }
 
 exports.send = function(obj, req, res, next) {
-  if(req.isJson)
+  if(sanitize.isJson(req))
     return res.send(obj);
 
-  if(req.isTxt)
+  if(sanitize.isText(req))
     return res.type('txt').send(JSON.stringify(obj));
 
   if(next !== undefined)

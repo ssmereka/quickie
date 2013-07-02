@@ -1,4 +1,5 @@
-var utility = require("../modules/utility");
+var utility  = require("../modules/utility"),
+    sanitize = require("../modules/sanitize");
 
 module.exports = function(app, db, config) {
   
@@ -28,10 +29,10 @@ module.exports = function(app, db, config) {
     var user = req.queryResult;                                      // Get the user object queried from the url's userId paramter.
     if( ! req.queryResult) return next();                            // If the user object is blank, then the requested user was not found and we cannot handle the request here, so move along.
 
-    if(req.isHtml)                                                   // If the request was for HTML, then render the user's view.
+    if(sanitize.isHtml(req))                                         // If the request was for HTML, then render the user's view.
       return utility.render(res, 'user/user', { user: user });
 
-    utility.send(req, res, user);                                    // Handles the request by sending back the appropriate response, if we havn't already.
+    utility.send(user, req, res);                                    // Handles the request by sending back the appropriate response, if we havn't already.
   }
 
   /* Users
@@ -41,8 +42,8 @@ module.exports = function(app, db, config) {
     User.find().sort('name').exec(function(err, users) {             // Find all the users and sort them by their name attribute.
       if(err) return next(err);
 
-      if(req.isHtml)                                                 // If the request was for HTML, then render the users view.
-        return utility.render(res, 'user/users', { users: users });
+      if(sanitize.isHtml(req))                                       // If the request was for HTML, then render the users view.
+        return utility.render(res, 'user/users', { users: users, hostUrl: config.host_uri });
 
       utility.send(users, req, res);                                 // Handles the request by sending back the appropriate response, if we havn't already.
     });
@@ -57,7 +58,7 @@ module.exports = function(app, db, config) {
     user.update(req.body, (req.user) ? req.user._id : undefined, function(err, user) {  // Update the new user object with the values from the request body.  Also, if the person creating the new user is identified, send that along in the request.
       if(err) next(err);
 
-      if(req.isHtml)                                                                    // If the request was for HTML, then redirect to the users page.
+      if(sanitize.isHtml(req))                                                          // If the request was for HTML, then redirect to the users page.
         return res.redirect('/users.html');
 
       utility.send(user, req, res);                                                     // Handles the request by sending back the appropriate response, if we havn't already.
@@ -74,7 +75,7 @@ module.exports = function(app, db, config) {
     if( ! req.queryResult) return next();                            // If the user object is blank, then the requested user was not found and we cannot handle the request here, so move along.
 
     user.update(req.body, (req.user) ? req.user._id : undefined, function(err, user) {  // Update the user object with the values from the request body.  Also, if the person updating the user is identified, send that along in the request.
-      if(req.isHtml)                                                 // If the request was for HTML, then redirect to the users page.
+      if(sanitize.isHtml(req))                                       // If the request was for HTML, then redirect to the users page.
         return res.redirect('/users.html');
 
       utility.send(user, req, res);                                  // Handles the request by sending back the appropriate response, if we havn't already.
@@ -93,7 +94,7 @@ module.exports = function(app, db, config) {
     user.delete((req.user) ? req.user._id : undefined, function(err, user, success) {  // Delete the user object and anything linked to it.  Also, if the person deleting the user is identified, send that along in the request.
       if(err) return next(err);
 
-      if(req.isHtml)                                                 // If the request was for HTML, redirect to the users page.
+      if(sanitize.isHtml(req))                                       // If the request was for HTML, redirect to the users page.
         return res.redirect('/users.html');
 
       utility.send(user, req, res);                                  // Handles the request by sending back the appropriate response, if we havn't already.   

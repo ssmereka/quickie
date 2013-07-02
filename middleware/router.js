@@ -17,7 +17,8 @@ module.exports = function(app, db, config) {
 
   app.all('/*', setLocalVariables);
 
-  app.all('/users/:id*', load(User));
+  app.all('/users/:id.:format', load(User));
+  app.all('/users/:id/*.:format', load(User));
 
 
   /****************************************/

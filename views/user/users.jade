@@ -1,0 +1,7 @@
+h1 Users:
+- if (users.length)
+  ul
+    - users.forEach(function(user) {
+      li
+        a(href="#{hostUrl}/users/#{user._id}.html") #{user.name}
+    - })
