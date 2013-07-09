@@ -91,6 +91,23 @@ var allConfig = {
 
   dirname: dirname,                                                  // The root directory for the node server application. 
   
+  mail: {                                                            // The mail object holds configurations for sending mail a variety of different ways using the nodemailer module.
+    gmail: {                                                         // Gmail settings.  The easiest way to send mail is using gmail as your provider.  Configure this object with a valid gmail account and you will be sending email in no time.
+      enabled: true,                                                 // Is this mail option available for sending mail.  This attribute must be here and true, otherwise these settings will be ignored.
+      auth: {                                                        // Gmail authentication uses your gmail username and password.
+        user: "sir.spam.a.lot123456789@gmail.com",                   // Gmail username with the @gmail.com
+        pass: "123456789asdf"                                        // Gmail password in plain text, I know, it is dumb, but w/e just make an account you don't care about for testing purposes.
+      },
+      options: {                                                     // These are the default mail options.  You must override the attributes you wish to change when sending mail using the utility "sendGmail" function.
+        from: "Sir Spam a Lot <sir.spam.a.lot123456789@gmail.com>",  // Who is the email frome.
+        to: "sir.spam.a.lot123456789@gmail.com",                     // Who is the email to.
+        subject: "Hello",                                            // Email subject.
+        text: "This is a test.",                                     // Email text.
+        html: ""                                                     // Email html.
+      }
+    }
+  },
+
   paths: {                                                           // A group of properties describe where different parts of the application can be found. 
     publicFolder: '/public',                                         // Default location where are all public files stored, for example: css, javascript, or images.
     uploadFolder: '/uploads',                                        // Default location for private files that are uploaded by the application.
@@ -123,6 +140,37 @@ var allConfig = {
 
 /********************************************************/
 /******************** Config Methods ********************/
+
+/* Attach Email Attributes
+ * Add the necessary functions and attributes for sending
+ * emails to the config object.  This will also remove
+ * any settings that are not configured correctly or are
+ * disabled.  This will return the updated config object.
+ */
+function attachEmailAttributes(config) {
+  var nodemailer = require('nodemailer');
+
+  for(var service in config.mail) {
+    switch(service) {
+      case "gmail":
+        if(config.mail[service].enabled) {
+          config.mail[service].smtpTransport = nodemailer.createTransport("SMTP", {
+            service: "Gmail",
+            auth: config.mail[service].auth,
+          });
+        } else {
+          config.mail[service] = { enabled: false};
+        }
+        break;
+
+      default:
+        config.mail[service] = { enabled: false};
+        break;
+    }
+  }
+  return config;
+}
+
 
 /* Create Config Object
  * Create a single object that holds all the settings for
@@ -198,6 +246,8 @@ function createConfigObject() {
                         + obj['api']['path'] 
                         + '/' 
                         + obj['api']['currentVersion'];
+
+  obj = attachEmailAttributes(obj);                                  // Clean up and attach the functions and attributes for sending emails.
 
   return obj;                                                        // Return the single configured object.
 }

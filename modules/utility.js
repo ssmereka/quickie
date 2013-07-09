@@ -181,3 +181,42 @@ exports.getPositiveDateDiff = function(date1, date2) {
     return undefined
   return Math.abs((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24));
 }
+
+/* Send Gmail
+ * Send an email using gmail as the provider.  This should
+ * return an error if gmail is not configured correctly or 
+ * is disabled.  It will also return an error if the 
+ * message was not sent for whatever reason.
+ * 
+ * TODO:  Talk more about how this function works and 
+ *        improve the error checking.
+ */
+exports.sendGmail = function(config, mailOptions, next) {
+  if(mailOptions !== undefined) {
+    for(var key in config.mail.gmail.options) {
+      if(mailOptions[key] === undefined)
+        mailOptions[key] = config.mail.gmail.options[key];
+    }
+  } else {
+    mailOptions = config.mail.gmail.options;
+  }
+
+  try {
+    config.mail.gmail.smtpTransport.sendMail(mailOptions, next);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/* Merge Objects
+ * Combine two object's attributes giving priority
+ * to the first object's (obj1) attribute values.
+ * TODO: This is not ready for production in any way.
+ */
+exports.mergeObjects = function(obj1, obj2) {
+  for(var key in obj2) {
+    if(obj1[key] === undefined)
+      obj1[key] = obj2[key];
+  }
+  return obj1;
+}
