@@ -1,3 +1,10 @@
+# Deprecated
+
+I combined all my efforts into [Fox-js](https://github.com/ssmereka/fox-js).  You should check it out.
+
+
+--------------------------
+
 # quickie [![Build Status](https://secure.travis-ci.org/ssmereka/quickie.png)](http://travis-ci.org/ssmereka/quickie)
 
 
